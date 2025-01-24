@@ -1,0 +1,18 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - mrcfile
+  - scipy
+  - pandas
+  - numba
+  - matplotlib
+  - tqdm
+  - scikit-learn
+  - numpy
+  - click
+  - pyyaml
+  - pip:
+    - cryosparc-tools
+name: micsparc
