@@ -1,6 +1,8 @@
 import click
 import numpy as np
 from cryosparc.dataset import Dataset
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from scipy import stats
 from tqdm import tqdm
 
@@ -30,6 +32,10 @@ def main(input_particles, output_name, conf_threshold):
 
     new_tubes = []
 
+    if not output_name:
+        output_name = f"{input_particles[:-3]}_assigned"
+    pdf = PdfPages(f"{output_name}.pdf")
+
     for mic_name in tqdm(mics):
         mic = mics[mic_name]
 
@@ -40,6 +46,13 @@ def main(input_particles, output_name, conf_threshold):
             tube = mic.query({"filament/filament_uid": fil_uid})
             classes = class_posterior(tube)
 
+            fig, ax = plt.subplots(1, 2, sharey=True)
+            fig.supxlabel("Particle index along tube")
+            fig.supylabel("Class number")
+            plt.ylim(0, 5)
+
+            ax[0].scatter(range(len(tube)), classes)
+
             smoothened = []
             for i in range(0, len(tube)):
                 window = classes[
@@ -47,6 +60,8 @@ def main(input_particles, output_name, conf_threshold):
                 ]
                 mode, count = stats.mode(window)
                 smoothened.append(mode)
+
+            # ax[1].scatter(range(len(tube)), smoothened)
 
             changes = np.diff(smoothened)
             split_pos = (
@@ -75,10 +90,17 @@ def main(input_particles, output_name, conf_threshold):
 
                 new_tubes.append(split)
 
-    new_tubes_cs = Dataset.append_many(*new_tubes)
+                ax[1].scatter(
+                    range(split_pos[i], split_pos[i + 1]),
+                    [modal_class for _ in range(len(split))],
+                )
 
-    if not output_name:
-        output_name = f"{input_particles[:-3]}_assigned"
+            pdf.savefig(fig)
+            plt.close(fig)
+
+    pdf.close()
+
+    new_tubes_cs = Dataset.append_many(*new_tubes)
 
     new_tubes_cs.save(f"{output_name}.cs")
 

@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - mrcfile
+  - scipy
+  - pandas
+  - numba
+  - matplotlib
+  - tqdm
+  - scikit-learn
+  - click
+  - numpy
+  - pyyaml
+name: micsparc
