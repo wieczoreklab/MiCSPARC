@@ -1,12 +1,19 @@
 import multiprocessing as mp
+import warnings
 
 import click
+import matplotlib
 import numpy as np
 from cryosparc.dataset import Dataset
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from scipy.optimize import differential_evolution
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
+
+warnings.filterwarnings("ignore")
+
+matplotlib.use("Agg")
 
 
 def wrap_to_180(n):
@@ -65,9 +72,8 @@ def fit_rots(coeffs, rots, pfn):
     return dists.min(axis=0).sum()
 
 
-def plot_rots(coeffs, rots, pfn):
-    plt.scatter(np.arange(len(rots)), rots)
-    plt.ylim(-180, 180)
+def plot_rots(ax, coeffs, rots, pfn):
+    ax.scatter(np.arange(len(rots)), rots)
     twist = 360 / pfn
 
     p = np.arange(len(rots))
@@ -75,9 +81,7 @@ def plot_rots(coeffs, rots, pfn):
     for i in range(pfn):
         m = coeffs[0]
         c = wrap_to_180(coeffs[1] + (i * twist))
-        plt.plot(p, wrap_to_180(np.polynomial.polynomial.polyval(p, [c, m])))
-
-    plt.show()
+        ax.plot(p, wrap_to_180(np.polynomial.polynomial.polyval(p, [c, m])))
 
 
 def process_mic(args):
@@ -111,6 +115,7 @@ def process_mic(args):
     tubes = mic.split_by("filament/filament_uid")
 
     unified_tubes = []
+    figs = []
 
     for filament_uid in tubes:
         tube = tubes[filament_uid]
@@ -118,6 +123,11 @@ def process_mic(args):
         if len(tube) < 5:
             # Probably too short to fit confidently
             continue
+
+        fig, ax = plt.subplots(1, 2, sharey=True)
+        fig.supxlabel("Particle index along tube")
+        fig.supylabel("Phi/rot angle (degrees)")
+        plt.ylim(-180, 180)
 
         eulers = R.from_rotvec(tube["alignments3D/pose"]).as_euler("ZYZ", degrees=True)
         rots = eulers[:, 0]
@@ -130,6 +140,7 @@ def process_mic(args):
         )
         result = res.x
         result[1] = wrap_to_180(result[1])
+        plot_rots(ax[0], res.x, rots, pfn)
 
         result = find_modal_rot(result, rots, pfn)
 
@@ -143,7 +154,10 @@ def process_mic(args):
 
         unified_tubes.append(tube)
 
-    return Dataset.append_many(*unified_tubes)
+        ax[1].scatter(np.arange(len(rots)), corrected_rot)
+        figs.append(fig)
+
+    return figs, Dataset.append_many(*unified_tubes)
 
 
 @click.command()
@@ -175,20 +189,29 @@ def main(input_particles, output_name, pfn, num_cpus):
 
     unified_tubes = []
 
-    with mp.Pool(min(len(mics), num_cpus)) as pool:
-        unified_tubes = list(
-            tqdm(
-                pool.imap_unordered(
-                    process_mic, [(mic, pfn) for mic in mics.values()], chunksize=1
-                ),
-                total=len(mics),
-            )
-        )
-
-    unified_tubes_cs = Dataset.append_many(*unified_tubes)
-
     if not output_name:
         output_name = f"{input_particles[:-3]}_uphi"
+
+    pdf = PdfPages(f"{output_name}.pdf")
+
+    unified_tubes = []
+    with mp.Pool(min(len(mics), num_cpus)) as pool:
+        for figs, tube in tqdm(
+            pool.imap_unordered(
+                process_mic,
+                [(mic, pfn) for mic in mics.values()],
+                chunksize=1,
+            ),
+            total=len(mics),
+        ):
+            unified_tubes.append(tube)
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+
+    pdf.close()
+
+    unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
     unified_tubes_cs.save(f"{output_name}.cs")
 

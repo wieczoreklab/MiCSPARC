@@ -206,7 +206,7 @@ def process_mic(mic):
                     rtol=0,
                     atol=50 * pix_size,
                 )
-            ) > 0.9 * len(coords):
+            ) > 0.9 * len(segment):
                 new_coords = generate_coords(
                     fit, np.median(segment[:, 0]), xlim, ylim, box_step
                 )
@@ -236,7 +236,7 @@ def process_mic(mic):
 
                 if np.count_nonzero(
                     np.isclose(x_comp, y_comp, rtol=0, atol=50 * pix_size)
-                ) > 0.9 * len(coords):
+                ) > 0.9 * len(segment):
                     new_dataset = create_dataset(mic, new_coords, fil_num, xlim, ylim)
                     extrapolated_tubes.append(new_dataset)
 

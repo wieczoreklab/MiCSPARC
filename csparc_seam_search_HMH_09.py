@@ -1,11 +1,23 @@
+import math
 import multiprocessing as mp
 
 import click
+import matplotlib
 import numpy as np
 from cryosparc.dataset import Dataset
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.figure import Figure  # Adde this in here
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
+
+
+
+matplotlib.use("Agg")
+font = {"size": 10}
+matplotlib.rc("font", **font)
+plt.rcParams['figure.max_open_warning'] = 5000
 
 def calc_sphere_coordinates(
     x: float, y: float, z: float, z_rot: float, y_rot: float, z2_rot: float
@@ -40,6 +52,7 @@ def process_mic(args):
     mic, conf_threshold = args
     new_tubes = {}
     new_pfs = []
+    figs = []
 
     tubes = mic.split_by("filament/filament_uid")
 
@@ -54,6 +67,15 @@ def process_mic(args):
 
         src_uids = np.unique(tube["sym_expand/src_uid"])
 
+        # n = len(src_uids)
+        # n_rows = math.floor(math.sqrt(n))
+        # n_cols = math.ceil(n / n_rows)
+
+        # fig, ax = plt.subplots(n_rows, n_cols, sharey=True, sharex=True)
+        # fig.supxlabel("Protofilament index")
+        # fig.supylabel("Register class / seam score")
+
+        # ax_i = 0
         for src_uid in src_uids:
             expanded_group = tube.query({"sym_expand/src_uid": src_uid})
             if len(expanded_group) != pfn:
@@ -94,7 +116,21 @@ def process_mic(args):
 
                 probs.append(seam_prob)
 
+            # ax[np.unravel_index(ax_i, (n_rows, n_cols))].bar(range(pfn), probs)
+            # ax[np.unravel_index(ax_i, (n_rows, n_cols))].scatter(
+            #     range(pfn), classes / 2 + 0.5
+            # )
+
             tube_probs.append(probs)
+
+            # ax_i += 1
+
+        # figs.append(fig)
+
+        fig = plt.figure()
+        plt.bar(range(pfn), np.mean(tube_probs, axis=0))
+        plt.text(0.5, 0.95, f"Filament UID: {src_uid}", ha='center', va='center', transform=plt.gca().transAxes, fontsize=10)  # Add the UID to the plot title
+        figs.append(fig)
 
         seam_pos = np.argmax(np.mean(tube_probs, axis=0))
 
@@ -148,7 +184,7 @@ def process_mic(args):
             new_pfs.append(group1)
             new_pfs.append(group2)
 
-    return new_tubes, new_pfs
+    return new_tubes, new_pfs, figs
 
 
 @click.command()
@@ -156,8 +192,20 @@ def process_mic(args):
 @click.option(
     "--recenter",
     required=True,
-    help="New center reported by CryoSPARC when recentering on a single protofilament. Separate centers of different pfns with ;",
+    help="New center reported by CryoSPARC in Volume Aligment Tools when recentering on a single protofilament, check pixel size. Separate centers of different pfns with ;",
     type=str,
+)
+@click.option(
+    "--recenter_init_pxsize",
+    required=True,
+    help="Pixel size during New center reported by CryoSPARC in Volume Aligment Tools when recentering on a single protofilament. A/px ;",
+    type=float,  # Changed from str to float
+)
+@click.option(
+    "--recenter_final_pxsize",
+    required=True,
+    help="Final Pixel size for recentering. New center will be located at voxel coordinates. A/px ;",
+    type=float,  # Changed from str to float
 )
 @click.option(
     "--o", "output_name", help="Override output filename for new .cs and .csg files."
@@ -165,7 +213,7 @@ def process_mic(args):
 @click.option(
     "--conf",
     "conf_threshold",
-    help="Confidence threhold for seam assignment.",
+    help="Confidence threshold for seam assignment.",
     default=0.5,
     show_default=True,
 )
@@ -176,17 +224,22 @@ def process_mic(args):
     default=mp.cpu_count() // 2,
     show_default=True,
 )
-def main(input_particles, output_name, conf_threshold, num_cpus, recenter):
+def main(input_particles, output_name, conf_threshold, num_cpus, recenter, recenter_init_pxsize, recenter_final_pxsize ):
     tqdm.write("Reading particles...")
     particles = Dataset.load(input_particles)
 
     mics = particles.split_by("location/micrograph_path")
 
+    if not output_name:
+        output_name = f"{input_particles[:-3]}_seamed_{conf_threshold * 100:.0f}"
+
+    pdf = PdfPages(f"{output_name}.pdf")
+
     new_tubes = {}
     pfs = []
     tqdm.write("Starting seam search...")
     with mp.Pool(min(len(mics), num_cpus)) as pool:
-        for new_tube, new_pfs in tqdm(
+        for new_tube, new_pfs, figs in tqdm(
             pool.imap_unordered(
                 process_mic, [(mic, conf_threshold) for mic in mics.values()]
             ),
@@ -195,12 +248,14 @@ def main(input_particles, output_name, conf_threshold, num_cpus, recenter):
             for pfn in new_tube:
                 if pfn not in new_tubes:
                     new_tubes[pfn] = []
-
                 new_tubes[pfn].extend(new_tube[pfn])
             pfs.extend(new_pfs)
 
-    if not output_name:
-        output_name = f"{input_particles[:-3]}_seamed_{conf_threshold * 100:.0f}"
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+
+    pdf.close()
 
     tqdm.write("Writing reassigned particles...")
     pfs_dataset = Dataset.append_many(*pfs)
@@ -225,11 +280,11 @@ def main(input_particles, output_name, conf_threshold, num_cpus, recenter):
     recenters = recenter.split(";")
 
     for coords in recenters:
-        coords = list(map(float, coords.split(", ")))
-        box_size = particles["blob/shape"][0][0]
-        coords = (box_size / 2) + (box_size - np.array(coords))
-        tqdm.write(f"Recenter to {', '.join(map(str, coords))} px")
-
+        coords = list(map(float, coords.split(",")))  # Parse coordinates
+        coords_final = [coord * recenter_init_pxsize / recenter_final_pxsize for coord in coords]  # Scale
+        box_size = particles["blob/shape"][0][0]  # Retrieve box size
+        coords_final = (box_size / 2) + (box_size - np.array(coords_final))  # Recenter
+        tqdm.write(f"Recenter to {', '.join(map(str, coords_final))} px")  # Display updated coordinates
 
 if __name__ == "__main__":
     main()

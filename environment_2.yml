@@ -2,7 +2,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
-  - pip
   - mrcfile
   - scipy
   - pandas
@@ -10,9 +9,7 @@ dependencies:
   - matplotlib
   - tqdm
   - scikit-learn
-  - numpy
   - click
+  - numpy
   - pyyaml
-  - pip:
-    - cryosparc-tools
 name: micsparc

@@ -1,6 +1,8 @@
 import click
 import numpy as np
 from cryosparc.dataset import Dataset
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
@@ -14,6 +16,11 @@ def main(input_particles, output_name):
     particles = Dataset.load(input_particles)
 
     mics = particles.split_by("location/micrograph_path")
+
+    if not output_name:
+        output_name = f"{input_particles[:-3]}_upsi"
+
+    pdf = PdfPages(f"{output_name}.pdf")
 
     unified_tubes = []
 
@@ -44,6 +51,13 @@ def main(input_particles, output_name):
             if len(modal_points) < 3:
                 continue
 
+            fig, ax = plt.subplots(1, 2, sharey=True)
+            fig.supxlabel("Particle index along tube")
+            fig.supylabel("Psi angle (degrees)")
+            plt.ylim(-180, 180)
+
+            ax[0].scatter(range(len(psi)), psi)
+
             fit = (
                 np.polynomial.polynomial.Polynomial.fit(
                     np.argwhere(modal_mask).flatten(),
@@ -58,12 +72,16 @@ def main(input_particles, output_name):
             poses = R.from_euler("ZYZ", eulers, degrees=True).as_rotvec()
             tube["alignments3D/pose"] = poses
 
+            ax[1].scatter(range(len(corrected_psi)), corrected_psi)
+
+            pdf.savefig(fig)
+            plt.close(fig)
+
             unified_tubes.append(tube)
 
-    unified_tubes_cs = Dataset.append_many(*unified_tubes)
+    pdf.close()
 
-    if not output_name:
-        output_name = f"{input_particles[:-3]}_upsi"
+    unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
     unified_tubes_cs.save(f"{output_name}.cs")
 
