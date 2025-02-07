@@ -12,4 +12,6 @@ dependencies:
   - click
   - numpy
   - pyyaml
+  - ast
+  - cryosparc-tools
 name: micsparc

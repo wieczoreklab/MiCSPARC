@@ -1,0 +1,19 @@
+# Instance configuration
+
+base_port: 39270
+email: pavel.filipcik@psi.ch
+host: localhost
+license: a97a455c-9b7b-11ef-94ce-07782feeaa11
+password: trinaststyridsatsest
+
+# Lane configuration
+
+cpu_lane: cpu-daily
+cpu_highmem_lane: cpu-highmem
+gpu_lane: gpu-highmem-short
+gpu_highmem_lane: gpu-highmem
+gpu_highmem_short_lane: gpu-highmem-short
+gpu_veryhighmem_lane: gpu-node
+gpu_veryhighmem_short_lane: gpu-node-short
+
+scratch: False
