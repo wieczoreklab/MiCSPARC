@@ -633,7 +633,6 @@ if __name__ == "__main__":
 
         # Initial JIT compilation before multiprocessing
         start = time.time()
-        psi_prior(1, 1, 1)
         small_mic = max(mics.values(), key=len).slice(10)
         extrapolate_filaments(small_mic)
         tqdm.write(f"Finished numba pre-compiling ({time.time() - start:.4f}s)")

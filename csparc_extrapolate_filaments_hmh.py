@@ -2,7 +2,6 @@ import math
 import multiprocessing as mp
 import time
 import warnings
-
 import click
 import numba as nb
 import numpy as np
