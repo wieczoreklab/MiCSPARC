@@ -9,6 +9,7 @@ import yaml
 import time
 import ast
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from scipy.optimize import differential_evolution
 from scipy.spatial.transform import Rotation as R
 from scipy import stats
@@ -1256,16 +1257,24 @@ if __name__ == "__main__":
             
             num_cpus = 6
 
-            with mp.Pool(min(len(mics), num_cpus)) as pool:
-                unified_tubes = list(
-                    tqdm(
-                        pool.imap_unordered(
-                            phi_process_mic, [(mic, pfn) for mic in mics.values()], chunksize=1
-                        ),
-                        total=len(mics),
-                    )
-                )
+            # Here added from new version N+17 lines
+            pdf = PdfPages(f"{output_name}.pdf")
 
+            with mp.Pool(min(len(mics), num_cpus)) as pool:
+                for figs, tube in tqdm(
+                    pool.imap_unordered(
+                        phi_process_mic,
+                        [(mic, pfn) for mic in mics.values()],
+                        chunksize=1,
+                    ),
+                    total=len(mics),
+                ):
+                    unified_tubes.append(tube)
+                    for fig in figs:
+                        pdf.savefig(fig)
+                        plt.close(fig)
+
+            pdf.close()
             unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
             if not output_name:
