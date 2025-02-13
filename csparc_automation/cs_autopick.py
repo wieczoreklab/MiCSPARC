@@ -1248,7 +1248,7 @@ if __name__ == "__main__":
             output_name = f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles_phi_corrected1"
             particles_classified_csg = pipeline[f'local_refine_psi_{pf_start}'].download_file(f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles.csg", f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles.csg")
 
-            mics = particles.split_by("blob/path")
+            mics = particles.split_by("location/micrograph_path")
 
             unified_tubes = []
 
