@@ -1344,7 +1344,7 @@ if __name__ == "__main__":
             output_name = f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles_phi_corrected2"
             particles_classified_csg = pipeline[f'local_refine_phi_1_{pf_start}'].download_file(f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles.csg", f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles.csg")
 
-            mics = particles.split_by("blob/path")
+            mics = particles.split_by("location/micrograph_path")
 
             unified_tubes = []
 
@@ -1352,23 +1352,30 @@ if __name__ == "__main__":
             pfn = int(pfn)
             num_cpus = 6
 
-            with mp.Pool(min(len(mics), num_cpus)) as pool:
-                unified_tubes = list(
-                    tqdm(
-                        pool.imap_unordered(
-                            phi_process_mic, [(mic, pfn) for mic in mics.values()], chunksize=1
-                        ),
-                        total=len(mics),
-                    )
-                )
+            pdf = PdfPages(f"{output_name}.pdf")
 
+            with mp.Pool(min(len(mics), num_cpus)) as pool:
+                for figs, tube in tqdm(
+                    pool.imap_unordered(
+                        phi_process_mic,
+                        [(mic, pfn) for mic in mics.values()],
+                        chunksize=1,
+                    ),
+                    total=len(mics),
+                ):
+                    unified_tubes.append(tube)
+                    for fig in figs:
+                        pdf.savefig(fig)
+                        plt.close(fig)
+
+            pdf.close()
             unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
             if not output_name:
                 output_name = f"{input_particles[:-3]}_uphi"
 
             unified_tubes_cs.save(f"{output_name}.cs")
-
+            
             csg = []
             with open(input_particles + "g") as f:
                 for line in f:
