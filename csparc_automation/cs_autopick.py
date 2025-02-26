@@ -50,6 +50,7 @@ if __name__ == "__main__":
     gpu_highmem_short_lane = cs_conf.get('gpu_highmem_short_lane', "gpu-highmem-short")
     gpu_veryhighmem_lane = cs_conf.get('gpu_veryhighmem_lane', "gpu-node")
     gpu_veryhighmem_short_lane = cs_conf.get('gpu_veryhighmem_short_lane', "gpu-node-short")
+    models = cs_conf.get('models', "/data/project/bio/steinmetz/software/microtubule-processing/models/kinesin/*aligned.mrc")
 
     scratch = cs_conf.get('scratch', True)
 
@@ -92,9 +93,10 @@ if __name__ == "__main__":
         if os.path.isfile(f"cs_autopick.yml"):
             with open(f"cs_autopick.yml", "r") as f:
                 pick_settings = yaml.safe_load(f.read())
-                segment_length = int(pick_settings['segment_length']) or 82
-                tube_diameter = int(pick_settings['tube_diameter']) or 376
-                particle_padding_factor = float(pick_settings['particle_padding_factor']) or 1.7
+                segment_length = pick_settings.get('segment_length', 82)
+                tube_diameter = pick_settings.get('tube_diameter', 376)
+                particle_padding_factor = pick_settings.get('particle_padding_factor', 1.7)
+                models = pick_settings.get('models', models)
         else:
             segment_length = int(input("What is the segment length in pixels? [default: 82]:") or 82)
             tube_diameter = int(input("What is the tube diameter in pixels? [default: 376]:") or 376)
@@ -819,7 +821,7 @@ if __name__ == "__main__":
         
         pipeline['models'] = project.create_job(ws.uid, "import_volumes")
 
-        pipeline['models'].set_param("volume_blob_path", "/data/project/bio/steinmetz/software/microtubule-processing/models/kinesin/*aligned.mrc")
+        pipeline['models'].set_param("volume_blob_path", models)
         pipeline['models'].queue()
         log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline['models'].uid} models")
         jobcounter += 1

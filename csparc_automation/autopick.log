@@ -1,0 +1,51 @@
+Starting autopicking for project P1 with import job J2
+Picking will be done with the following settings: 
+ Segment length: 82 
+ Tube diameter: 376 
+ Particle padding factor: 1.7 
+ Apix: 0.6399999856948853 
+
+Queued 01 P1 W25 J832 motioncor_small
+Queued 02 P1 W25 J833 motioncor_full
+Queued 03 P1 W25 J834 ctffind_small
+Queued 04 P1 W25 J835 ctffind_full
+Queued 05 P1 W25 J836 curate_full
+Queued 06 P1 W25 J837 tracer1
+Queued 07 P1 W25 J838 extract1
+Queued 08 P1 W25 J839 classify_blob_picks
+Queued 09 P1 W25 J840 select2d_1
+Queued 10 P1 W25 J841 template_tracer1
+Queued 11 P1 W25 J842 extract2
+Queued 12 P1 W25 J843 classify_first_picks
+Queued 13 P1 W25 J844 select2d_2
+Queued 14 P1 W25 J845 template_tracer2
+Queued 15 P1 W25 J846 inspect1
+Queued 16 P1 W25 J847 extract3
+Queued 17 P1 W25 J848 classify_good_template_picks
+Queued 18 P1 W25 J849 select2d_4
+Queued 19 P1 W25 J850 classify_good_template_picks2
+Queued 20 P1 W25 J851 select2d_5
+Queued 21 P1 W25 J852 classify_singleClass
+Queued 22 P1 W25 J853 importFilaments
+Queued 23 P1 W25 J854 extract4
+Queued 24 P1 W25 J855 classify_extrapolated1
+Queued 25 P1 W25 J856 select2d_6
+Queued 26 P1 W25 J857 classify_extrapolated2
+Queued 27 P1 W25 J858 select2d_7
+Queued 28 P1 W25 J859 models
+Queued 29 P1 W25 J860 protofilament_classification
+Queued 30 P1 W25 J861 importSortedFilaments
+Queued 31 P1 W25 J862 reconstructClassified
+Queued 31 P1 W25 J863 splitVolumes
+Queued 32 P1 W25 J865 helical_refine_14-3
+Valid classes are: ['14-3']
+Queued 33 P1 W25 J866 extract5_14-3_pf
+Queued 34 P1 W25 J867 fullsize_helical_refine_14-3
+Queued 35 P1 W25 J868 ctf_refine_per_particle_14-3
+Queued 36 P1 W25 J869 fullsize_c1_helix_refine_14-3
+Queued 37 P1 W25 J870 psi_unify_14-3
+Queued 38 P1 W25 J871 local_refine_psi_14-3
+Queued 39 P1 W25 J872 unify_phi_1_14-3
+Queued 40 P1 W25 J873 local_refine_phi_1_14-3
+Queued 41 P1 W25 J874 unify_phi_2_14-3
+Queued 42 P1 W25 J875 local_refine_phi_2_14-3
