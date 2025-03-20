@@ -86,6 +86,7 @@ def main(input_particles, output_name, conf_threshold):
                 ).astype(int)
 
                 new_fil_uid = max(new_fil_uids) + 1
+                new_fil_uids.append(new_fil_uid)
                 split["filament/filament_uid"] = new_fil_uid
 
                 new_tubes.append(split)

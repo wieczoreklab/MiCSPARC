@@ -1,0 +1,9 @@
+# Picking configuration
+
+tube_diameter: 376
+segment_length: 82
+particle_padding_factor: 1.7
+logfile_path:
+
+# Classification configuration
+models: "/data/project/bio/steinmetz/software/microtubule-processing/models/undecorated/*.mrc"

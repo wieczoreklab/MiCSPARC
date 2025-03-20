@@ -84,7 +84,7 @@ def plot_rots(ax, coeffs, rots, pfn):
         ax.plot(p, wrap_to_180(np.polynomial.polynomial.polyval(p, [c, m])))
 
 
-def process_mic(args):
+def phi_process_mic(args):
     mic, pfn = args
 
     # Split filaments if their aligned psi is not smooth
@@ -198,7 +198,7 @@ def main(input_particles, output_name, pfn, num_cpus):
     with mp.Pool(min(len(mics), num_cpus)) as pool:
         for figs, tube in tqdm(
             pool.imap_unordered(
-                process_mic,
+                phi_process_mic,
                 [(mic, pfn) for mic in mics.values()],
                 chunksize=1,
             ),

@@ -2,7 +2,6 @@ import math
 import multiprocessing as mp
 import time
 import warnings
-
 import click
 import numba as nb
 import numpy as np
@@ -138,7 +137,7 @@ def calc_coords(dataset, pix_size, xlim, ylim):
     )
 
 
-def process_mic(mic):
+def extrapolate_filaments(mic):
     pix_size = mic["location/micrograph_psize_A"][0]
     box_step = mic["filament/inter_box_dist_A"][0] / pix_size
     xlim = mic["location/micrograph_shape"][0][1]
@@ -298,14 +297,14 @@ def main(input_particles, output_name, num_cpus):
     start = time.time()
     psi_prior(1, 1, 1)
     small_mic = max(mics.values(), key=len).slice(10)
-    process_mic(small_mic)
+    extrapolate_filaments(small_mic)
     tqdm.write(f"Finished numba pre-compiling ({time.time() - start:.4f}s)")
 
     tqdm.write("Processing remaining micrographs")
 
     with mp.Pool(min(len(mics), num_cpus)) as pool:
         extrapolated = list(
-            tqdm(pool.imap_unordered(process_mic, mics.values()), total=len(mics))
+            tqdm(pool.imap_unordered(extrapolate_filaments, mics.values()), total=len(mics))
         )
 
     tqdm.write("Writing final results group")
