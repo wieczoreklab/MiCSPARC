@@ -1,7 +1,5 @@
-
-
 from cryosparc.tools import CryoSPARC
-from thresholding_functions import gauss, bimodal, get_threshold_of_scale_factor_bimodal, get_threshold_of_tilt_bimodal, filter_particles_by_threshold, filter_particles_by_tilt_threshold, cs_import_particle_dataset
+from thresholding_functions import gauss, bimodal, get_threshold_of_scale_factor_bimodal, get_threshold_of_tilt, filter_particles_by_threshold, filter_particles_by_tilt_threshold, cs_import_particle_dataset
 import os
 import yaml
 import argparse
@@ -15,7 +13,8 @@ if __name__ == "__main__":
     parser.add_argument('--filter', required=True, help='Type of filter. Options: scale, tilt, scale_tilt, scale_plain')
     parser.add_argument('--threshold', required=False, help='Threshold value for scale_plain filter')
     parser.add_argument('--threshold_sigma', required=False, default=2, help='Sigma for threshold for scale and tilt filters, default 2')
-    parser.add_argument('--keep_refused', required=False, default=False, help='Keep refused particles from the last filter. Useful for scale filter.')
+    parser.add_argument('--keep_refused', required=False, default=False, help='Keep refused particles from the last filter. Useful for scale filter. [True/False] Default False')
+    parser.add_argument('--tilt_bimodal', required=False, default=False, help='Try to use bimodal distribution for tilt filter. [True/False] Default False')
     args = parser.parse_args()
 
     homedir = os.getenv("HOME")
@@ -40,6 +39,7 @@ if __name__ == "__main__":
     threshold_sigma = float(args.threshold_sigma)
     filter = args.filter
     keep_refused = args.keep_refused
+    tilt_bimodal = args.tilt_bimodal
     project = cs.find_project(project)
     job = project.find_job(job)
     particles = job.load_output("particles")
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                                               particles, 
                                               f"scale over {threshold:2f} filtered particles from {job.uid}")
     elif filter == 'tilt':
-        t1, t2 = get_threshold_of_tilt_bimodal(job, particles, sigma_mult=threshold_sigma)
+        t1, t2 = get_threshold_of_tilt(job, particles, sigma_mult=threshold_sigma, bimodal=tilt_bimodal)
         particles, refused = filter_particles_by_tilt_threshold(particles, t1, t2)
         uploaded = cs_import_particle_dataset(project, 
                                               workspace, 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
                                               job, 
                                               particles, 
                                               f"scale over {threshold:2f} filtered particles from {job.uid}")
-        t1, t2 = get_threshold_of_tilt_bimodal(job, particles, sigma_mult=threshold_sigma)
+        t1, t2 = get_threshold_of_tilt(job, particles, sigma_mult=threshold_sigma, bimodal=tilt_bimodal)
         particles, refused = filter_particles_by_tilt_threshold(particles, t1, t2)
         uploaded = cs_import_particle_dataset(project, 
                                               workspace, 

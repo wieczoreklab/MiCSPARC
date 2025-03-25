@@ -1,7 +1,7 @@
 Autopicking takes in a job with imported movies, and outputs a locally-refined angle-unified volume and particles for each class that contains > 5000 particles in classification.
 
 It requires a cs_config.yml file in your $HOME directory. An example cs_config.yml is provided. 
-It requires linking all the csparc_*.py files into the cryosparc_automation directory, as following
+It requires linking all the csparc_*.py files into the csparc_automation directory, as following
     cd csparc_automation
     ln -s ../*.py .
 It requires cryosparc-tools, requirements updated. 
