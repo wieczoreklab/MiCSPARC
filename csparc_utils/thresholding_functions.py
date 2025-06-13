@@ -52,7 +52,6 @@ def cs_import_particle_dataset(project, workspace_uid, source_job, particles, ti
             upload.queue()
             print(f"Importing {output_name}, {title} into project {project.uid} as {upload.uid} in workspace {workspace_uid}.")
             return upload
-# filtered_particles = cs_import_particle_dataset(project, workspace_number, helix_refine, filtered_particles, "Filtered per-particle scale >= 0.8")
 
 def gauss(x, mu, sigma, A):
     return A*np.exp(-(x-mu)**2/2/sigma**2)
@@ -107,7 +106,7 @@ def get_threshold_of_scale_factor_bimodal(source_job, particles, sigma_mult=2, p
         plt.close()
     return threshold
 
-def get_threshold_of_tilt_bimodal(source_job, particles, sigma_mult = 2, plot=False):
+def get_threshold_of_tilt(source_job, particles, sigma_mult = 2, plot=False, bimodal = False):
     project = source_job.project_uid
     job = source_job.uid
     jtype = source_job.type
@@ -119,30 +118,47 @@ def get_threshold_of_tilt_bimodal(source_job, particles, sigma_mult = 2, plot=Fa
     y,x,_=plt.hist(tilt, bins = 100)
     x=(x[1:]+x[:-1])/2 # for len(x)==len(y) #x, y inputs can be lists or 1D numpy arrays
     guess = (x[np.argmax(y)], 25, np.max(y)/10, x[np.argmax(y)], 5, np.max(y)) # One wide one narrow gaussian with shared centre
-    print(f"Two-gaussian fit guess: {guess}")
-    try:
-        print("Calculating bimodal fit")
-        params, cov = curve_fit(bimodal, x, y, guess)
-        sigma=np.sqrt(np.diag(cov))
-        x_fit = np.linspace(x.min(), x.max(), 500)
-        #plot combined...
-        plt.plot(x_fit, bimodal(x_fit, *params), color='red', lw=3, label='model')
-        #...and individual Gauss curves
-        plt.plot(x_fit, gauss(x_fit, *params[:3]), color='red', lw=1, ls="--", label='distribution 1')
-        plt.plot(x_fit, gauss(x_fit, *params[3:]), color='red', lw=1, ls=":", label='distribution 2')
-        #and the original data points if no histogram has been created before
-        #plt.scatter(x, y, marker="X", color="black", label="original data")
-        plt.xlabel("Tilt")
-        plt.ylabel("Frequency")
+    #print(f"Two-gaussian fit guess: {guess}")
+    if bimodal:
+        try:
+            print("Calculating bimodal fit")
+            params, cov = curve_fit(bimodal, x, y, guess)
+            sigma=np.sqrt(np.diag(cov))
+            x_fit = np.linspace(x.min(), x.max(), 500)
+            #plot combined...
+            plt.plot(x_fit, bimodal(x_fit, *params), color='red', lw=3, label='model')
+            #...and individual Gauss curves
+            plt.plot(x_fit, gauss(x_fit, *params[:3]), color='red', lw=1, ls="--", label='distribution 1')
+            plt.plot(x_fit, gauss(x_fit, *params[3:]), color='red', lw=1, ls=":", label='distribution 2')
+            #and the original data points if no histogram has been created before
+            #plt.scatter(x, y, marker="X", color="black", label="original data")
+            plt.xlabel("Tilt")
+            plt.ylabel("Frequency")
 
-        if params[0] > params[3]:
+            if params[0] > params[3]:
+                threshold1 = params[0] - 2 * params[1]
+                threshold2 = params[0] + 2 * params[1]
+            else:
+                threshold1 = params[3] - 2 * params[4]
+                threshold2 = params[3] + 2 * params[4]
+        except:
+            print("Bimodal fit failed. Trying with single gaussian.")
+            guess = guess[3:]
+            params, cov = curve_fit(gauss, x, y, guess)
+            sigma=np.sqrt(np.diag(cov))
+            x_fit = np.linspace(x.min(), x.max(), 500)
+            #plot combined...
+            #...and individual Gauss curves
+            plt.plot(x_fit, gauss(x_fit, *params[:3]), color='red', lw=1, ls="--", label='model')
+            #and the original data points if no histogram has been created before
+            #plt.scatter(x, y, marker="X", color="black", label="original data")
+            plt.xlabel("Tilt")
+            plt.ylabel("Frequency")
+            #plt.title(f"Filtering {job.uid} {job.type} by scale factor")
+
             threshold1 = params[0] - 2 * params[1]
             threshold2 = params[0] + 2 * params[1]
-        else:
-            threshold1 = params[3] - 2 * params[4]
-            threshold2 = params[3] + 2 * params[4]
-    except:
-        print("Bimodal fit failed. Trying with single gaussian.")
+    else:
         guess = guess[3:]
         params, cov = curve_fit(gauss, x, y, guess)
         sigma=np.sqrt(np.diag(cov))
@@ -158,7 +174,7 @@ def get_threshold_of_tilt_bimodal(source_job, particles, sigma_mult = 2, plot=Fa
 
         threshold1 = params[0] - 2 * params[1]
         threshold2 = params[0] + 2 * params[1]
-    
+
 
     print(f"Threshold at {sigma_mult} sigma is {threshold1} - {threshold2}")
     
