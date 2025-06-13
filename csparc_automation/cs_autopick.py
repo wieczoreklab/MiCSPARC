@@ -98,8 +98,8 @@ if __name__ == "__main__":
                 particle_padding_factor = pick_settings.get('particle_padding_factor', 1.7)
                 models = pick_settings.get('models', models)
         else:
-            segment_length = int(input("What is the segment length in pixels? [default: 82]:") or 82)
-            tube_diameter = int(input("What is the tube diameter in pixels? [default: 376]:") or 376)
+            segment_length = int(input("What is the segment length in Ångstrom? [default: 82]:") or 82)
+            tube_diameter = int(input("What is the tube diameter in Ångstrom? [default: 376]:") or 376)
             particle_padding_factor = float(input("What is the particle padding factor? [default: 1.7]:") or 1.7)
             with open(f"cs_autopick.yml", "w") as f:
                 yaml.dump({"segment_length": segment_length, "tube_diameter": tube_diameter, "particle_padding_factor": particle_padding_factor}, f)
