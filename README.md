@@ -20,7 +20,7 @@ All local refinements may benefit from having "FSC noise substitution" enabled, 
 
 ### Generate initial templates for filament tracer
 
-2. **Filament tracer** — ~300 Å*, 82 Å separation, 300–400 Å template-free diameter
+2. **Filament tracer** — ~300 Å*, 82 Å separation, 300–400 Å template-free diameter\
    If the filament tracer is not picking any microtubules at this stage, increasing the sd of gaussian blur (e.g. to 2.0) and/or increasing both hysteresis values in increments of 1 can help.
 3. **Inspect picks, extract** — ~550–600 Å box*, bin to 4–5 Å/px
 4. **2D classification**
@@ -39,7 +39,7 @@ All local refinements may benefit from having "FSC noise substitution" enabled, 
 
 The filament tracer will generally not pick along the entire microtubule, and may introduce errors in filament grouping. This can be rectified using the filament extrapolation script.
 
-11. **Run filament extrapolation script**
+11. **Run filament extrapolation script**\
     Enter the exported directory (it is easiest to run the scripts directly within the exported directory in order to be able to reimport the results group)
     ```bash
     $ python /path/to/csparc_extrapolate_filaments.py --i JX_particles_exported.cs ...
@@ -56,14 +56,14 @@ The filament tracer will generally not pick along the entire microtubule, and ma
 
 References are required for the classification in 3D into groups of different protofilament numbers. This classification tends to be very dependent on references with the correct factors such as decoration state, positioning, and heterogeneity, and potentially even expansion or compression of the tube due to factors such as GMPCPP. Thus, it is recommended to create synthetic references directly from the dataset, as follows:
 
-16. **Helical refinements with theoretical helical parameters corresponding to potential protofilament numbers in the dataset**
+16. **Helical refinements with theoretical helical parameters corresponding to potential protofilament numbers in the dataset**\
     Theoretical helical parameters are calculated in the form:
-    $$
+    ```math
     \begin{align*}
     \text{rise} &= \frac{\text{n-start} \times \text{tubulin spacing}}{\text{protofilament no.}} \\
     \text{twist} &= \frac{360^\circ + \text{supertwist}}{\text{protofilament no.}}
     \end{align*}
-    $$
+    ```
     Supertwist can generally be taken as 0 at this stage. Common theoretical microtubule parameters:
 
     | pfn  | rise (Å) | twist (°) |
@@ -167,7 +167,7 @@ If refining multiple classes:
     For decorated: at least one class with clear and convincing spacing of decorator, ideally at least two which exhibit a difference in register (if applicable)
 56. **Reconstruct, local refinement for each register**, combining particles from appropriate classes — 3sd rotations, 2sd shifts, allow rotation recentering, enforce non-negativity
 57. **If only one register was observed, create the other register using volume alignment** — recenter in Z by 41 Å
-58. **3D classification w/ both refined registers** — 2 classes, input initialization mode, filter 4 Å for undecorated, up to 12 Å for large decorators, force hard classification, no per-particle scale
+58. **3D classification w/ both refined registers** — 2 classes, input initialization mode, filter 4 Å for undecorated, up to 12 Å for large decorators, force hard classification, no per-particle scale\
     This step should result in a ~50/50 split of particles
 59. **Local refinement both classes separately** — 3sd rotations, 2sd shifts, allow recentering, enforce non-negativity
 60. **Volume alignment** — Shift worse class by 4 Å in Z
