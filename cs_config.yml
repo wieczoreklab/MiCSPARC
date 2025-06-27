@@ -1,0 +1,7 @@
+# Instance configuration
+
+base_port: 61000
+email: hugo.munoz@mol.biol.ethz.ch
+host: localhost
+license: xxxxxxx-xxxx-xxxx-xxxxxxxxxxx
+password: "******"
