@@ -14,6 +14,29 @@ For all reconstructions that are followed by local refinements, use the particle
 
 All local refinements may benefit from having "FSC noise substitution" enabled, but this has not been vigorously tested.
 
+## Installation
+
+1. Install conda / mamba [https://github.com/conda-forge/miniforge]
+
+`curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"`
+
+`bash Miniforge3-$(uname)-$(uname -m).sh`
+
+2. Open new terminal
+
+3. Download and install MiCSPARC requirements
+
+`cd <your_destination_directory>`
+
+`git clone git@github.com:wieczoreklab/MiCSPARC.git`
+
+`cd MiCSPARC`
+
+`mamba create -f environment.yml`
+
+`mamba activate micsparc`
+
+
 ## Picking
 
 1. **Motion correction, CTF estimation, curate exposures**
