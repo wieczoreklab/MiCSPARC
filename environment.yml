@@ -14,4 +14,4 @@ dependencies:
   - pyyaml
   - pip:
     - cryosparc-tools
-name: micsparc-test
+name: micsparc
