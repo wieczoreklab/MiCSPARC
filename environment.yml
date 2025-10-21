@@ -12,6 +12,6 @@ dependencies:
   - click
   - numpy
   - pyyaml
-  - ast
-  - cryosparc-tools
-name: micsparc
+  - pip:
+    - cryosparc-tools
+name: micsparc-test
