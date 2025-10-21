@@ -321,7 +321,7 @@ if __name__ == "__main__":
                                             ws.uid, 
                                             "filament_tracer_gpu",
                                             title = "1st template tracer",
-                                            params={"filament_diameter": 376,
+                                            params={"filament_diameter": tube_diameter,
                                                     "min_distance": segment_length/tube_diameter,
                                                     "min_filament_length": 1,
                                                     "branch_radius_remove": 0.5,
@@ -831,7 +831,7 @@ if __name__ == "__main__":
         pipeline['models'].wait_for_done()
         pipeline['protofilament_classification'] = project.create_job(ws.uid,
                                                     "hetero_refine",
-                                                    title="Classify protofilament classes on Thorsten's maps",
+                                                    title="Classify protofilament classes on imported maps",
                                                     params={
                                                         "multirefine_force_hard_class" : True,
                                                         "compute_use_ssd": scratch,
