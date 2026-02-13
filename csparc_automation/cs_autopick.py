@@ -1,4 +1,4 @@
-#!/data/user/filipc_p/miniforge3/envs/micsparc/bin/python
+#!/usr/bin/env python
 import os
 import multiprocessing as mp
 import click
@@ -1432,7 +1432,6 @@ if __name__ == "__main__":
         resume = False
         for pf_start in valid_classes:
             pipeline[f'local_refine_phi_2_{pf_start}'].wait_for_done()
-            pf, start = pf_start.split("-")
             order, rise, twist = get_helical_refinement_results(pipeline[f'fullsize_helical_refine_{pf_start}'])
             pipeline[f'symmetry_expansion_{pf_start}'] = project.create_job(ws.uid, "sym_expand",
                                                     title=f"Symmetry expansion for {pf_start} phi-unified protofilament class",
