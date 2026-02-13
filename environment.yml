@@ -13,5 +13,5 @@ dependencies:
   - numpy
   - pyyaml
   - pip:
-    - cryosparc-tools
+    - cryosparc-tools==4.7.1
 name: micsparc
