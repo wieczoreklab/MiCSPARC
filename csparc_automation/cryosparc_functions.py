@@ -64,15 +64,16 @@ def resume_pipeline(logfile_path, cs):
     return project, workspace, job, step, pipeline
 
 def get_helical_refinement_results(job):
-    a = job.doc
-    helical_order = a['output_result_groups'][1]['latest_summary_stats']['hsym_order']
-    rise = a['output_result_groups'][1]['latest_summary_stats']['helical_rise_A']
-    twist = a['output_result_groups'][1]['latest_summary_stats']['helical_twist_deg']
+    a = job.model.dict()
+    helical_order = a['spec']['outputs']['volume']['latest_summary_stats']['hsym_order']
+    rise = a['spec']['outputs']['volume']['latest_summary_stats']['helical_rise_A']
+    twist = a['spec']['outputs']['volume']['latest_summary_stats']['helical_twist_deg']
     return helical_order, rise, twist
 
 def get_refinement_resolution(job):
-    a = job.doc
-    resolution = a['output_result_groups'][1]['latest_summary_stats']['fsc_info_best']['radwn_final_A']
+    a = job.model.dict()
+    resolution = a['spec']['outputs']['volume']['latest_summary_stats']['fsc_info_best']['radwn_final_A']
+
     return resolution
 
 def get_particle_number(job):
@@ -80,8 +81,8 @@ def get_particle_number(job):
 
 
 def get_refinement_nyquist(job):
-    a = job.doc
-    psize = a['output_result_groups'][0]['summary']['blob/psize_A']
+    a = job.model.dict()
+    psize = a['spec']['outputs']['particles']['summary']['blob/psize_A']
     nyquist = 2 * psize
     return nyquist
 

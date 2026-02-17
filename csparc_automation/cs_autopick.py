@@ -607,7 +607,7 @@ if __name__ == "__main__":
                                                     title="Group to single class",
                                                     connections={"particles": (pipeline['select2d_5'].uid, "particles_selected")},
                                                     params={
-                                                        "class2D_K": 1,
+                                                        "class2D_K": 2,
                                                         "class2D_estimate_in_plane_pose": True,
                                                         "class2D_sigma_init_iter": 200,
                                                         "compute_use_ssd": scratch,
@@ -624,13 +624,7 @@ if __name__ == "__main__":
         pipeline['classify_singleClass'].wait_for_done()
         particles = pipeline['classify_singleClass'].load_output('particles')
 
-        resultgroup = pipeline['classify_singleClass'].download_file(f"{pipeline['classify_singleClass'].uid}_particles.csg")
-
-
         num_cpus = 1
-        output_name = pipeline['classify_singleClass'].uid + "_extrapolated_filaments"
-        input_particles = f"{pipeline['classify_singleClass'].uid}_020_particles.cs"
-        passthrough = f"{pipeline['classify_singleClass'].uid}_passthrough_particles.cs"
 
         mics = particles.split_by("location/micrograph_path")
 
@@ -651,44 +645,16 @@ if __name__ == "__main__":
 
         result = Dataset.append_many(*extrapolated)
 
-        if not output_name:
-            output_name = f"{input_particles[:-3]}_extrapolated"
 
-        result.save(f"{output_name}.cs")
-        with open(resultgroup) as f:
-            csg = yaml.safe_load(f.read())
-        new_results_group = {
-            "location": csg["results"]["location"],
-            "filament": csg["results"]["filament"],
-        }
-        new_results_group["location"]["metafile"] = new_results_group["location"][
-            "metafile"
-        ].replace(passthrough, f"{output_name}.cs")
-        new_results_group["filament"]["metafile"] = new_results_group["filament"][
-            "metafile"
-        ].replace(input_particles, f"{output_name}.cs")
-        new_csg = {
-            "created": csg["created"],
-            "group": csg["group"],
-            "results": new_results_group,
-            "version": csg["version"],
-        }
-        with open(f"{output_name}.csg", "w") as f:
-            yaml.dump(new_csg, f)
-
-        tqdm.write(f"Written {output_name}.csg")
-
-        project.upload(f"exports/filamentExtrapolation/{pipeline['classify_singleClass'].uid}/{output_name}.cs", f'{output_name}.cs', overwrite=True)
-        project.upload(f"exports/filamentExtrapolation/{pipeline['classify_singleClass'].uid}/{output_name}.csg", f'{output_name}.csg', overwrite=True)
-
-
-        pipeline['importFilaments'] = project.create_job(ws.uid, "import_result_group",
+        filaments_extrapolated = cs.save_external_result(project.uid, ws.uid, result,
+                                        type="particle",
                                         title="Import extrapolated filaments",
-                                        params={
-                                            "blob_path": os.path.abspath(f"{project.dir()}/exports/filamentExtrapolation/{pipeline['classify_singleClass'].uid}/{output_name}.csg"),
-                                        }
+                                        name="particles",
+                                        slots=["filament","location"],
+                                        #passthrough=(pipeline['classify_singleClass'].uid, "particles")
                                         )
-        pipeline['importFilaments'].queue()
+        pipeline['importFilaments'] = project.find_job(filaments_extrapolated)
+        #pipeline['importFilaments'].queue()
         log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline['importFilaments'].uid} importFilaments")
         jobcounter += 1
         
@@ -854,10 +820,10 @@ if __name__ == "__main__":
         particles = pipeline['protofilament_classification'].load_output("particles_all_classes")
         #particles_classified_csg = os.path.abspath(f"{project.dir()}/exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{pipeline['protofilament_classification'].uid}_particles_all_classes_exported.csg")
         
-        input_particles = f"{pipeline['protofilament_classification'].uid}_particles_all_classes.cs"
-        output_name = f"{pipeline['protofilament_classification'].uid}_particles_all_classes_assigned"
+        #input_particles = f"{pipeline['protofilament_classification'].uid}_particles_all_classes.cs"
+        #output_name = f"{pipeline['protofilament_classification'].uid}_particles_all_classes_assigned"
         
-        particles_classified_csg = pipeline['protofilament_classification'].download_file(f"{pipeline['protofilament_classification'].uid}_particles_all_classes.csg", f"{pipeline['protofilament_classification'].uid}_particles_all_classes.csg")
+        #particles_classified_csg = pipeline['protofilament_classification'].download_file(f"{pipeline['protofilament_classification'].uid}_particles_all_classes.csg", f"{pipeline['protofilament_classification'].uid}_particles_all_classes.csg")
         
         conf_threshold = 0.7
         mics = particles.split_by("location/micrograph_path")
@@ -912,39 +878,47 @@ if __name__ == "__main__":
 
         new_tubes_cs = Dataset.append_many(*new_tubes)
 
-        if not output_name:
-            output_name = f"{input_particles[:-3]}_assigned"
+        #if not output_name:
+        #    output_name = f"{input_particles[:-3]}_assigned"
 
-        new_tubes_cs.save(f"{output_name}.cs")
-        csg = []
-        with open(particles_classified_csg) as f:
-            for line in f:
-                if "metafile:" not in line:
-                    csg.append(line)
-                else:
-                    csg.append(f"    metafile: \'>{output_name}.cs\'\n")
-        csg = ''.join(csg)
+        #new_tubes_cs.save(f"{output_name}.cs")
+        #csg = []
+        #with open(particles_classified_csg) as f:
+        #    for line in f:
+        #    if "metafile:" not in line:
+        #        csg.append(line)
+        #    else:
+        #        csg.append(f"    metafile: \'>{output_name}.cs\'\n")
+        #csg = ''.join(csg)
         #csg = csg.replace(f"{pipeline['protofilament_classification'].uid}_passthrough_particles_all_classes.cs", f"{output_name}.cs")
-        with open(f"{output_name}.csg", "w") as f:
-            f.write(csg)
+        #with open(f"{output_name}.csg", "w") as f:
+        #    f.write(csg)
 
-        tqdm.write(f"Written {output_name}.csg")
+        #tqdm.write(f"Written {output_name}.csg")
         
         init_assignments = np.sum(particles['alignments3D_multi/class_posterior'], axis=0)
         final_assignments = np.sum(new_tubes_cs['alignments3D_multi/class_posterior'], axis=0)
         for i in range(len(init_assignments)):
             print(f"Initial class {i} with {i+11} protofilaments had {init_assignments[i]} particles, final class {i} has {final_assignments[i]} particles.")
         
-        project.upload(f"exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{output_name}.cs", f'{output_name}.cs', overwrite=True)
-        project.upload(f"exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{output_name}.csg", f'{output_name}.csg', overwrite=True)      
-        
-        pipeline['importSortedFilaments']=project.create_job(ws.uid, "import_result_group",
+        #project.upload(f"exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{output_name}.cs", f'{output_name}.cs', overwrite=True)
+        #project.upload(f"exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{output_name}.csg", f'{output_name}.csg', overwrite=True)      
+        filaments_sorted = cs.save_external_result(project.uid, ws.uid, new_tubes_cs,
+                                        type="particle",
+                                        title="Import sorted filaments",
+                                        name="particles_all_classes",
+                                        slots=["filament","location", "ctf", "alignments3D_multi", "alignments2D", "blob", ],
+                                        #passthrough=(pipeline['classify_singleClass'].uid, "particles")
+                                        )
+        pipeline['importSortedFilaments'] = project.find_job(filaments_sorted)
+
+        """pipeline['importSortedFilaments']=project.create_job(ws.uid, "import_result_group",
                                                             title="Import sorted protofilaments",
                                                             params={
                                                                 "blob_path": os.path.abspath(f"{project.dir()}/exports/groups/{pipeline['protofilament_classification'].uid}_particles_all_classes/{output_name}.csg"),
                                                             }
                                                         )
-        pipeline['importSortedFilaments'].queue()
+        pipeline['importSortedFilaments'].queue()"""
         log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline['importSortedFilaments'].uid} importSortedFilaments")
         jobcounter += 1
     
@@ -992,16 +966,27 @@ if __name__ == "__main__":
                 print(f"Class {i+11} has less than 5000 particles, skipping.")
                 continue
             else:
+                # Join split and passthrough data 
+                class_particles = pipeline['splitVolumes'].load_output(f'particles_class_{i}')
+                all_particles = pipeline['importSortedFilaments'].load_output("particles_all_classes")
+                class_particles = class_particles.innerjoin(class_particles, all_particles)
+                class_particles = cs.save_external_result(project.uid, ws.uid, class_particles,
+                                        type="particle",
+                                        title=f"Import {i+11} pf filaments",
+                                        name="particles",
+                                        )
+                external_job = project.find_job(class_particles)
                 pipeline[f'reconstruct_{pf_start}_protofilaments'] = project.create_job(ws.uid,
                                                                                     "homo_reconstruct",
                                                                                     title = f"Homogeneous reconstruction for {pf_start} protofilament class",
                                                                                     connections = {
-                                                                                        "particles" : (pipeline['splitVolumes'].uid, f"particles_class_{i}"),
+                                                                                        "particles" : (external_job.uid, "particles"),
                                                                                     },
                                                                                     params = {
                                                                                         "compute_use_ssd": scratch,
                                                                                     }
                                                                                 )
+                #pipeline[f'reconstruct_{pf_start}_protofilaments'].connect_result(pipeline['reconstructClassified'].uid, "particles_all_classes", slot)                                                                
                 pipeline[f'reconstruct_{pf_start}_protofilaments'].queue(lane   = gpu_highmem_short_lane)
                                                                         
                 pipeline[f'helical_refine_{pf_start}'] = project.create_job(ws.uid, "helix_refine",
@@ -1015,7 +1000,7 @@ if __name__ == "__main__":
                                                         "compute_use_ssd": scratch,
                                                     },
                                                     connections = {
-                                                        "particles" : (pipeline['splitVolumes'].uid, f"particles_class_{i}"),
+                                                        "particles" : (pipeline[f'reconstruct_{pf_start}_protofilaments'].uid, f"particles"),
                                                         "volume" : (pipeline[f'reconstruct_{pf_start}_protofilaments'].uid, f"volume")
                                                     })
                 pipeline[f'helical_refine_{pf_start}'].queue(lane = gpu_highmem_lane)
@@ -1069,7 +1054,7 @@ if __name__ == "__main__":
                                                         "refine_init_shift": microtubule_params_theory[pf_start]['rise'],
                                                         "refine_init_twist": microtubule_params_theory[pf_start]['twist'],
                                                         "compute_use_ssd": scratch,
-                                                        "low_memory_mode": True
+                                                        #"low_memory_mode": True
                                                     },
                                                     connections = {
                                                         "particles" : (pipeline[f'extract5_{pf_start}_pf'].uid, "particles"),
@@ -1112,7 +1097,7 @@ if __name__ == "__main__":
                                                         "refine_init_shift": microtubule_params_theory[pf_start]['rise'],
                                                         "refine_init_twist": microtubule_params_theory[pf_start]['twist'],
                                                         "compute_use_ssd": scratch,
-                                                        "low_memory_mode": True 
+                                                        #"low_memory_mode": True 
                                                     },
                                                     connections = {
                                                         "particles" : (pipeline[f'ctf_refine_per_particle_{pf_start}'].uid, "particles"),
@@ -1128,9 +1113,6 @@ if __name__ == "__main__":
         for pf_start in valid_classes:
             pipeline[f'fullsize_c1_helix_refine_{pf_start}'].wait_for_done()
             particles = pipeline[f'fullsize_c1_helix_refine_{pf_start}'].load_output("particles")
-            input_particles = f"{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles.cs"
-            output_name = f"{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles_psi_corrected"
-            particles_classified_csg = pipeline[f'fullsize_c1_helix_refine_{pf_start}'].download_file(f"{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles.csg", f"{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles.csg")
 
                         
             mics = particles.split_by("location/micrograph_path")
@@ -1182,36 +1164,15 @@ if __name__ == "__main__":
 
             unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
-            if not output_name:
-                output_name = f"{input_particles[:-3]}_upsi"
+            psi_unified_particles = cs.save_external_result(project.uid, ws.uid, unified_tubes_cs,
+                                        type="particle",
+                                        title=f"Import psi-unified particles for {pf_start} protofilament class",
+                                        name="particles",
+                                        )
+            psi_unified_particles = project.find_job(psi_unified_particles)
 
-            unified_tubes_cs.save(f"{output_name}.cs")
+            pipeline[f'psi_unify_{pf_start}'] = psi_unified_particles
 
-            csg = []
-            with open(input_particles + "g") as f:
-                for line in f:
-                    if "metafile:" not in line:
-                        csg.append(line)
-                    else:
-                        csg.append(f"    metafile: \'>{output_name}.cs\'\n")
-            csg = ''.join(csg)
-            #csg = csg.replace(input_particles, f"{output_name}.cs")
-            with open(f"{output_name}.csg", "w") as f:
-                f.write(csg)
-
-
-            tqdm.write(f"Written {output_name}.csg")
-
-            project.upload(f"exports/groups/{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles/{output_name}.cs", f'{output_name}.cs', overwrite=True)
-            project.upload(f"exports/groups/{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles/{output_name}.csg", f'{output_name}.csg', overwrite=True)  
-            
-            pipeline[f'psi_unify_{pf_start}']=project.create_job(ws.uid, "import_result_group",
-                                   title=f"Import psi-unified particles for {pf_start} protofilament class",
-                                   params={
-                                       "blob_path": os.path.abspath(f"{project.dir()}/exports/groups/{pipeline[f'fullsize_c1_helix_refine_{pf_start}'].uid}_particles/{output_name}.csg"),
-                                   }
-                                   )
-            pipeline[f'psi_unify_{pf_start}'].queue()
             log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline[f'psi_unify_{pf_start}'].uid} psi_unify_{pf_start}")
             jobcounter += 1
             
@@ -1246,9 +1207,6 @@ if __name__ == "__main__":
         for pf_start in valid_classes:
             pipeline[f'local_refine_psi_{pf_start}'].wait_for_done()
             particles = pipeline[f'local_refine_psi_{pf_start}'].load_output("particles")
-            input_particles = f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles.cs"
-            output_name = f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles_phi_corrected1"
-            particles_classified_csg = pipeline[f'local_refine_psi_{pf_start}'].download_file(f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles.csg", f"{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles.csg")
 
             mics = particles.split_by("location/micrograph_path")
 
@@ -1259,8 +1217,7 @@ if __name__ == "__main__":
             
             num_cpus = 6
 
-            # Here added from new version N+17 lines
-            pdf = PdfPages(f"{output_name}.pdf")
+            pdf = PdfPages(f"{project.uid}_{pf_start}_phi_unification.pdf")
 
             with mp.Pool(min(len(mics), num_cpus)) as pool:
                 for figs, tube in tqdm(
@@ -1278,36 +1235,16 @@ if __name__ == "__main__":
 
             pdf.close()
             unified_tubes_cs = Dataset.append_many(*unified_tubes)
-
-            if not output_name:
-                output_name = f"{input_particles[:-3]}_uphi"
-
-            unified_tubes_cs.save(f"{output_name}.cs")
-
-            csg = []
-            with open(input_particles + "g") as f:
-                for line in f:
-                    if "metafile:" not in line:
-                        csg.append(line)
-                    else:
-                        csg.append(f"    metafile: \'>{output_name}.cs\'\n")
-            csg = ''.join(csg)
-            #csg = csg.replace(input_particles, f"{output_name}.cs")
-            with open(f"{output_name}.csg", "w") as f:
-                f.write(csg)
-
-            tqdm.write(f"Written {output_name}.csg")
             
-            project.upload(f"exports/groups/{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles/{output_name}.cs", f'{output_name}.cs', overwrite=True)
-            project.upload(f"exports/groups/{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles/{output_name}.csg", f'{output_name}.csg', overwrite=True)
-            
-            pipeline[f'unify_phi_1_{pf_start}']=project.create_job(ws.uid, "import_result_group",
-                                   title=f"Import phi-unified particles for {pf_start} protofilament class",
-                                   params={
-                                       "blob_path": os.path.abspath(f"{project.dir()}/exports/groups/{pipeline[f'local_refine_psi_{pf_start}'].uid}_particles/{output_name}.csg"),
-                                   }
-                                   )
-            pipeline[f'unify_phi_1_{pf_start}'].queue()
+
+            phi_unified_particles1 = cs.save_external_result(project.uid, ws.uid, unified_tubes_cs,
+                                        type="particle",
+                                        title=f"Import phi-unified particles for {pf_start} protofilament class",
+                                        name="particles",
+                                        )
+            phi_unified_particles1 = project.find_job(phi_unified_particles1)
+            pipeline[f'unify_phi_1_{pf_start}']=phi_unified_particles1
+
             log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline[f'unify_phi_1_{pf_start}'].uid} unify_phi_1_{pf_start}")
             jobcounter += 1
             
@@ -1342,9 +1279,6 @@ if __name__ == "__main__":
         for pf_start in valid_classes:
             pipeline[f'local_refine_phi_1_{pf_start}'].wait_for_done()
             particles = pipeline[f'local_refine_phi_1_{pf_start}'].load_output("particles")
-            input_particles = f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles.cs"
-            output_name = f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles_phi_corrected2"
-            particles_classified_csg = pipeline[f'local_refine_phi_1_{pf_start}'].download_file(f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles.csg", f"{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles.csg")
 
             mics = particles.split_by("location/micrograph_path")
 
@@ -1354,7 +1288,7 @@ if __name__ == "__main__":
             pfn = int(pfn)
             num_cpus = 6
 
-            pdf = PdfPages(f"{output_name}.pdf")
+            pdf = PdfPages(f"{project.uid}_{pf_start}_phi_unification2.pdf")
 
             with mp.Pool(min(len(mics), num_cpus)) as pool:
                 for figs, tube in tqdm(
@@ -1373,35 +1307,14 @@ if __name__ == "__main__":
             pdf.close()
             unified_tubes_cs = Dataset.append_many(*unified_tubes)
 
-            if not output_name:
-                output_name = f"{input_particles[:-3]}_uphi"
+            phi_unified_particles2 = cs.save_external_result(project.uid, ws.uid, unified_tubes_cs,
+                                        type="particle",
+                                        title=f"Import phi-unified particles for {pf_start} protofilament class",
+                                        name="particles",
+                                        )
+            phi_unified_particles2 = project.find_job(phi_unified_particles2)
 
-            unified_tubes_cs.save(f"{output_name}.cs")
-            
-            csg = []
-            with open(input_particles + "g") as f:
-                for line in f:
-                    if "metafile:" not in line:
-                        csg.append(line)
-                    else:
-                        csg.append(f"    metafile: \'>{output_name}.cs\'\n")
-            csg = ''.join(csg)
-            #csg = csg.replace(input_particles, f"{output_name}.cs")
-            with open(f"{output_name}.csg", "w") as f:
-                f.write(csg)
-
-            tqdm.write(f"Written {output_name}.csg")
-            
-            project.upload(f"exports/groups/{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles/{output_name}.cs", f'{output_name}.cs', overwrite=True)
-            project.upload(f"exports/groups/{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles/{output_name}.csg", f'{output_name}.csg', overwrite=True)
-            
-            pipeline[f'unify_phi_2_{pf_start}']=project.create_job(ws.uid, "import_result_group",
-                                   title=f"Import phi-unified particles for {pf_start} protofilament class",
-                                   params={
-                                       "blob_path": os.path.abspath(f"{project.dir()}/exports/groups/{pipeline[f'local_refine_phi_1_{pf_start}'].uid}_particles/{output_name}.csg"),
-                                   }
-                                   )
-            pipeline[f'unify_phi_2_{pf_start}'].queue()
+            pipeline[f'unify_phi_2_{pf_start}']=phi_unified_particles2
             log_append(logfile_path, f"Queued {jobcounter:02d} {project.uid} {ws.uid} {pipeline[f'unify_phi_2_{pf_start}'].uid} unify_phi_2_{pf_start}")
             jobcounter += 1
             
