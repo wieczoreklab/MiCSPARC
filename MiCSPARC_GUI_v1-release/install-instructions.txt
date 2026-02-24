@@ -10,4 +10,4 @@ $ conda activate micsparc-GUI
 5. Some may use test_connection.py to check taht everything works fine
 $ python test_connection.py
 6. Launch the GUI
-$ python micsparc_gui_launcher_v1-release.py
+$ python MiCSPARC_GUI_launcher_v1-release.py
