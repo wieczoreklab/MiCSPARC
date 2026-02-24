@@ -4,14 +4,16 @@ MiCSPARC is a microtubule (MT) processing pipeline built around the CryoSPARC pl
 Microtubules are polar filaments formed by αβ-tubulin heterodimers. Their structural arrangement often disrupts helical symmetry due to a discontinuity known as the seam, complicating their analysis via single-particle analysis (SPA). Moreover, cryo-EM images of microtubules tend to be noisy and pseudo-helical, which makes it difficult to distinguish between nearly identical tubulin subunits.
 
 MiCSPARC introduces a user-friendly, GUI-based pipeline that integrates with CryoSPARC to automate key tasks including filament tracing, protofilament number assignment, register correction, and seam localization. This greatly accelerates cryo-EM processing workflows and enhances the reproducibility of structural studies. MiCSPARC has been validated on diverse datasets and offers a reliable, accessible solution for structural biologists.
-Installation Instructions
 
-1. Set up a Conda environment using the provided 'environment.yml' file.
-2. Before running MiCSPARC, ensure all dependencies are installed and that the 'cryosparc-tools' package matches your CryoSPARC version (major and minor release). For example, if using CryoSPARC v4.7.1, install the latest v4.7.x version of cryosparc-tools.
-3. To activate the environment and launch the MiCSPARC GUI:
-   $ conda activate micsparc
-   $ python /path/to/micsparc_gui_launcher_v1-3.py
-4. Ensure the CryoSPARC credentials file 'cs_config.yml' is located in your script directory.
+Install Instructions
+
+1. Set up a Conda environment using the provided 'environment.yml' file.                                                                                                                                                                     $ conda env create -f environment_GUI.yml
+2. Before running MiCSPARC, ensure all dependencies are installed and that 'cryosparc-tools' package matches your CryoSPARC version (major and minor release). For example, if using CryoSPARC v4.7.1, install the latest v4.7.x version of cryosparc-tools. You can edit environment_GUI.yml to match your version.                                                                                                                                                                                                               - cryosparc-tools==4.7.1
+3. Activate the environment and launch the MiCSPARC GUI:                                                                                                                                                                                             $ conda activate micsparc-GUI
+4. Edit 'cs_config.yml'to ensure that contains your CryoSPARC credentials: port, email, host, license, password
+5. Some may use test_connection.py to check taht everything works fine                                                                                                                                                                              $ python test_connection.py
+6. Launch the GUI                                                                                                                                                                                                                                    $ python micsparc_gui_launcher_v1-release.py 
+
 PROTOCOL
 1.	Motion correction, CTF estimation, curate exposures
 Generate initial templates for filament tracer
