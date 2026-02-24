@@ -1,0 +1,7 @@
+# Instance configuration
+
+base_port: 39000 or your_port
+email: hugo.munoz@mol.biol.ethz.ch  - your email
+host: your-host-IP
+license: xxxxxxx-xxxx-xxxx-xxxxxxxxxxx
+password: "******"
