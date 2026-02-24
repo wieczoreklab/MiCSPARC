@@ -1,0 +1,19 @@
+name: micsparc-GUI
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - mrcfile
+  - scipy
+  - pandas
+  - numba
+  - matplotlib
+  - tqdm
+  - scikit-learn
+  - click
+  - numpy
+  - pyyaml
+  - pip
+  - pip:
+      - PyQt6
+      - cryosparc-tools==4.7.1
