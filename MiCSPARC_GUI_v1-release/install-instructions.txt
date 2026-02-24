@@ -1,4 +1,4 @@
-Install Instructions
+Install Instructions for the MiCSPARC user friendly GUI
 
 1. Set up a Conda environment using the provided 'environment.yml' file.
 $ conda env create -f environment_GUI.yml
