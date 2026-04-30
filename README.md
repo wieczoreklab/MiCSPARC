@@ -3,7 +3,7 @@ MiCSPARC, a cryo-EM processing pipeline developed around CryoSPARC, which levera
 If MiCSPARC is useful in your work, please cite us. 
 
 Daniel Zhang, Hugo Munoz-Hernandez, Pavel Filipcik, Kushal Sejwal, Yixin Xu, Sung Ryul Choi, Michel Steinmetz, Michal Wieczorek
-bioRxiv 2026.02.24.703950; doi: https://doi.org/10.64898/2026.02.24.703950
+Acta Cryst D 82, 411–420 (2026); doi: https://doi.org/10.1107/S2059798326003062
 
 ## Installation
 
@@ -27,6 +27,7 @@ bioRxiv 2026.02.24.703950; doi: https://doi.org/10.64898/2026.02.24.703950
 
 `mamba activate micsparc`
 
+The pipeline and instructions have been developed and tested with CryoSPARC v4.7.1. All MiCSPARC scripts accept a --help argument for description of required inputs.   
 
 ## Picking
 
@@ -34,8 +35,7 @@ bioRxiv 2026.02.24.703950; doi: https://doi.org/10.64898/2026.02.24.703950
 
 ### Generate initial templates for filament tracer
 
-2. **Filament tracer** — ~300 Å*, 82 Å separation, 300–400 Å template-free diameter\
-   If the filament tracer is not picking any microtubules at this stage, increasing the sd of gaussian blur (e.g. to 2.0) and/or increasing both hysteresis values in increments of 1 can help.
+2. **Filament tracer** — ~300 Å*, 82 Å separation in diameters (e.g. 0.27 for 300 Å diameter), 300–400 Å template-free diameter. If the filament tracer is not picking any microtubules at this stage, increasing the sd of gaussian blur (e.g. to 2.0) and/or increasing both hysteresis values in increments of 1 can help.
 3. **Inspect picks, extract** — ~550–600 Å box*, bin to 4–5 Å/px
 4. **2D classification**
 5. **Select classes with single clear tube**
@@ -44,9 +44,9 @@ bioRxiv 2026.02.24.703950; doi: https://doi.org/10.64898/2026.02.24.703950
 ### Generate initial picks
 
 6. **Filament tracer** — Templates from step 5, ~300 Å*, 82 Å separation
-7. **Inspect picks, extract**
-8. **2D classification** — 50–100 classes depending on number of picks, 2 final iterations
-9. **2D classification** — 50 classes, 2 final iterations, disable sigma annealing (start annealing sigma at iteration 200)
+7. **Inspect picks, extract** - Ideally, choose a box size that's a multiple of 4
+8. **2D classification, Select 2D** — 50–100 classes depending on number of picks, 2 final iterations
+9. **2D classification, Select 2D** — 50 classes, 2 final iterations, disable sigma annealing (start annealing sigma at iteration 200)
 10. **2D classification** — 1 class → **export particles group**
 
 ### Extrapolate initial picks
@@ -56,13 +56,13 @@ The filament tracer will generally not pick along the entire microtubule, and ma
 11. **Run filament extrapolation script**\
     Enter the exported directory (it is easiest to run the scripts directly within the exported directory in order to be able to reimport the results group)
     ```bash
-    $ python /path/to/csparc_extrapolate_filaments.py --i JX_particles_exported.cs ...
+    $ python /path/to/csparc_extrapolate_filaments.py --i JX_particles_exported.cs --j <number-of-cpus>
     ```
 12. **Import new results group**
     (`/path/to/CS-project/exports/groups/JX_particles/JX_particles_extrapolated.csg`)
 13. **Extract** — bin to ~2 Å/px
-14. **2D classification** — 50–100 classes depending on number of picks, 2 final iterations
-15. **2D classification** — 50 classes, 2 final iterations, disable sigma annealing
+14. **2D classification, Select 2D** — 50–100 classes depending on number of picks, 2 final iterations
+15. **2D classification, Select 2D** — 50 classes, 2 final iterations, disable sigma annealing
 
 ## Protofilament number sorting
 
@@ -94,17 +94,18 @@ References are required for the classification in 3D into groups of different pr
 18. **Recenter on a protofilament** (volume alignment tools with recentering to mask CoM)\
     Creating a protofilament mask with ChimeraX segmentation:
     - Volume tools lowpass 15 Å, download map, open in ChimeraX, set an appropriate masking threshold
-    - Tools > Volume Data > Segment Map
+    - Tools > Volume Data > Segment Map (In 'Segmenting Options', set 'Display at most' to 600)
     - Select a single protofilament, group
     - File (in the Segment window) > Save selected regions to .mrc file (this is temporary, it does not matter where they are saved)
     - Command: `volume resample [new volume] onGrid #1`
     - Save the resampled volume, import into CryoSPARC
     - Volume tools lowpass 15 Å, output as mask, initial threshold of full map
+    - Volume alignment tools, Input volume from best helical refine, symmetry expanded particles, new mask. Re-center to mask centre of mass.
 
-19. **Downsample** — 1/2 box size
-20. **Reconstruct, local refinement** — default sd rotations and shifts, allow recentering
-21. **Inverse mask around single protofilament** (volume tools 1/2 box and invert mask from step 18)
-22. **Particle subtraction**
+19. **Downsample** — 1/2 box size exactly. Do not change to optimise computation.
+20. **Homogeneous Reconstruct Only, Local Refinement** — Default parameters for reconstruction, for refinement enable 'Use pose/shift gaussian prior during alignment', use default sd rotations and shifts, allow recentering.
+21. **Inverse mask around single protofilament** (volume tools real space crop to 1/2 box size exactly and invert mask from step 18)
+22. **Particle subtraction** - particles from step 20, mask from step 21
 23. **Reconstruct, local refinement** — default sd rotations and shifts, allow recentering, enforce non-negativity → **export volume group**
 24. **Run reference generation script**
     ```bash
@@ -114,8 +115,8 @@ References are required for the classification in 3D into groups of different pr
 
 ### Protofilament number assignment
 
-25. **Import reference pf volumes**
-26. **Heterogeneous refinement** — force hard classification → **export particles group**
+25. **Import reference pf volumes** - check that the reference volumes look correct, if not double check --recenter coords from step 24, box sizes must be exactly 1/2 of original helical refine
+26. **Heterogeneous refinement** — force hard classification (if any of the output classes has 0 particles assigned to it, remove the corresponding reference and rerun the job) → **export particles group**
 27. **Run pf number assignment script**
     ```bash
     $ python /path/to/csparc_assign_pfns.py --i ...
