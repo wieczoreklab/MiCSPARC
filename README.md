@@ -206,7 +206,7 @@ For a final highest-resolution average of a protofilament:
     ```
     Using the recenter coords from step 46
 70. **Import results group(s if multiple pfns)**
-    (e.g. `/path/to/CS-project/exports/groups/JX_particles/JX_particles_seamed_50_13pf.csg`)
+    (e.g. `/path/to/CS-project/exports/groups/JX_particles/JX_particles_seamed_50_13pf_seam.csg`). Optionally, import the _nonseam.csg result group to obtain a dataset that excludes the two protofilaments flanking the seam position for further protofilament level refinement. 
 71. **Volume alignment** — recenter on center coords provided by step 69
 72. **Extract** — return to original MT box size
 73. **Local refinement** — volume and mask of symmetrised helical refinement, 3sd rotations, 2sd shifts, don't allow recentering
