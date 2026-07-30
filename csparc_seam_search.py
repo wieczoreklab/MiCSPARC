@@ -49,7 +49,7 @@ def count_max(counts):
 
 
 def process_mic(args):
-    mic, conf_threshold = args
+    mic, conf_threshold, exclude_seam_strict = args
     new_tubes = {}
     new_pfs = []
     figs = []
@@ -61,7 +61,7 @@ def process_mic(args):
 
         pfn = tube["sym_expand/helix_num_rises"][0]
         if pfn not in new_tubes:
-            new_tubes[pfn] = []
+            new_tubes[pfn] = {"seam": [], "nonseam": []}
 
         tube_probs = []
 
@@ -137,7 +137,19 @@ def process_mic(args):
         if np.mean(tube_probs, axis=0)[seam_pos] < conf_threshold:
             continue
 
-        new_tubes[pfn].append(tube.query({"sym_expand/idx": seam_pos}))
+        new_tubes[pfn]["seam"].append(tube.query({"sym_expand/idx": seam_pos}))
+
+        # Seam break is between (seam_pos - 1) and seam_pos; exclude those two from
+        # non-seam by default. Strict mode also drops (seam_pos + 1).
+        left = (seam_pos - 1) % pfn
+        exclude = {seam_pos, left}
+        if exclude_seam_strict:
+            exclude.add((seam_pos + 1) % pfn)
+        keep_idxs = [i for i in range(pfn) if i not in exclude]
+        if keep_idxs:
+            new_tubes[pfn]["nonseam"].append(
+                tube.query({"sym_expand/idx": keep_idxs})
+            )
 
         src_uids = tube.split_by("sym_expand/src_uid")
 
@@ -224,7 +236,26 @@ def process_mic(args):
     default=mp.cpu_count() // 2,
     show_default=True,
 )
-def main(input_particles, output_name, conf_threshold, num_cpus, recenter, recenter_init_pxsize, recenter_final_pxsize ):
+@click.option(
+    "--exclude_seam_strict",
+    is_flag=True,
+    default=False,
+    help=(
+        "When writing non-seam particles, also exclude the protofilament after "
+        "the seam (seam_pos+1), in addition to the seam and the preceding "
+        "protofilament (seam_pos-1) that meet at the seam break."
+    ),
+)
+def main(
+    input_particles,
+    output_name,
+    conf_threshold,
+    num_cpus,
+    recenter,
+    recenter_init_pxsize,
+    recenter_final_pxsize,
+    exclude_seam_strict,
+):
     tqdm.write("Reading particles...")
     particles = Dataset.load(input_particles)
 
@@ -241,14 +272,19 @@ def main(input_particles, output_name, conf_threshold, num_cpus, recenter, recen
     with mp.Pool(min(len(mics), num_cpus)) as pool:
         for new_tube, new_pfs, figs in tqdm(
             pool.imap_unordered(
-                process_mic, [(mic, conf_threshold) for mic in mics.values()]
+                process_mic,
+                [
+                    (mic, conf_threshold, exclude_seam_strict)
+                    for mic in mics.values()
+                ],
             ),
             total=len(mics),
         ):
-            for pfn in new_tube:
+            for pfn, groups in new_tube.items():
                 if pfn not in new_tubes:
-                    new_tubes[pfn] = []
-                new_tubes[pfn].extend(new_tube[pfn])
+                    new_tubes[pfn] = {"seam": [], "nonseam": []}
+                new_tubes[pfn]["seam"].extend(groups["seam"])
+                new_tubes[pfn]["nonseam"].extend(groups["nonseam"])
             pfs.extend(new_pfs)
 
             for fig in figs:
@@ -266,16 +302,19 @@ def main(input_particles, output_name, conf_threshold, num_cpus, recenter, recen
     with open(f"{input_particles[:-3]}_assigned.csg", "w") as f:
         f.write(csg)
 
-    for pfn in new_tubes:
-        # tqdm.write(f"Writing {pfn}pf MT...")
-        result = Dataset.append_many(*new_tubes[pfn])
-        result.save(f"{output_name}_{pfn}pf.cs")
-        with open(input_particles + "g") as f:
-            csg = f.read()
-        csg = csg.replace(input_particles, f"{output_name}_{pfn}pf.cs")
-        with open(f"{output_name}_{pfn}pf.csg", "w") as f:
-            f.write(csg)
-        tqdm.write(f"Written {output_name}_{pfn}pf.csg")
+    for pfn, groups in new_tubes.items():
+        for kind in ("seam", "nonseam"):
+            if not groups[kind]:
+                continue
+            result = Dataset.append_many(*groups[kind])
+            out_cs = f"{output_name}_{pfn}pf_{kind}.cs"
+            result.save(out_cs)
+            with open(input_particles + "g") as f:
+                csg = f.read()
+            csg = csg.replace(input_particles, out_cs)
+            with open(f"{output_name}_{pfn}pf_{kind}.csg", "w") as f:
+                f.write(csg)
+            tqdm.write(f"Written {output_name}_{pfn}pf_{kind}.csg")
 
     recenters = recenter.split(";")
 
